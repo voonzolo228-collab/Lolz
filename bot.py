@@ -650,4 +650,4 @@ async def confirm_transfer(msg: types.Message):
             await send_profit_to_group(deal_id, deal[7], amount, worker_name, worker_share)
     else:
         # Якщо немає посилання, надсилаємо повідомлення в групу
-        await bot.send_message(LOG_CHAT_ID, f'✅ Сделка {deal_id} завер
+        await bot.send_message(LOG_CHAT_ID, f'⚠️ Сделка {deal_id} завершена (без NFT-посилання)')
