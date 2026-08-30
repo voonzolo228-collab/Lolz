@@ -1,0 +1,5 @@
+# config.py
+
+BOT_TOKEN = "8804498885:AAH4xlqJ_ITy-M7da6aeiLons4oTY2drwCc"
+ADMIN_ID = 8323946313
+DATABASE_PATH = "p2p_bot.db"
