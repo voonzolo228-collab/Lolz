@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-BOT_TOKEN = "8819298037:AAEnCIZ5V4IdC3SjUf9j6MSvSwYRZ_Tlf94"  # ⚠️ ЗАМІНИТИ НА НОВИЙ ПІСЛЯ /revoke
+BOT_TOKEN = "8819298037:AAH4UoKpbnESiRFNxBLT6w6aYEfC8moFeSo"  # ⚠️ ЗАМІНИТИ НА НОВИЙ ПІСЛЯ /revoke
 WEBAPP_URL = "https://lolz-6.onrender.com"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
