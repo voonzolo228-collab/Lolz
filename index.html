@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gifts Battle</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #0d0d0d;
+            color: #fff;
+            padding: 15px;
+            min-height: 100vh;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #222;
+            margin-bottom: 15px;
+        }
+        .balance {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .balance span { color: #f5a623; }
+        .cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .case-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 20px 15px;
+            text-align: center;
+            border: 1px solid #2a2a2a;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .case-card:active { transform: scale(0.97); }
+        .case-card .emoji { font-size: 40px; }
+        .case-card .name { font-weight: bold; margin: 8px 0; font-size: 16px; }
+        .case-card .price { color: #f5a623; font-size: 14px; margin-bottom: 10px; }
+        .btn-open {
+            background: linear-gradient(135deg, #f5a623, #f7c948);
+            border: none;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 15px;
+            width: 100%;
+            cursor: pointer;
+        }
+        .inventory-section {
+            border-top: 1px solid #222;
+            padding-top: 15px;
+            margin-top: 10px;
+        }
+        .inventory-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .inv-item {
+            background: #1a1a1a;
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid #333;
+            font-size: 14px;
+        }
+        #modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.95);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        #modal .box {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 30px;
+            max-width: 320px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #333;
+        }
+        #modal .box .big-emoji { font-size: 60px; margin-bottom: 10px; }
+        #modal .box .item-name { font-size: 22px; font-weight: bold; }
+        #modal .box .btn-close {
+            background: #f5a623;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div style="font-size:18px;">🎁 Gifts Battle</div>
+    <div class="balance">⭐️ <span id="balance-display">0</span></div>
+</div>
+
+<div class="cases-grid" id="cases-container">
+    <div style="color:#666;">Завантаження...</div>
+</div>
+
+<div class="inventory-section">
+    <h3>🎒 Мій інвентар</h3>
+    <div class="inventory-grid" id="inventory-container">
+        <span style="color:#666;">Завантаження...</span>
+    </div>
+</div>
+
+<div id="modal">
+    <div class="box">
+        <div class="big-emoji" id="modal-emoji">🎁</div>
+        <div class="item-name" id="modal-name">Назва</div>
+        <button class="btn-close" onclick="closeModal()">Отримано!</button>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    const USER_ID = tg.initDataUnsafe?.user?.id;
+    const API_URL = 'https://lolz-6.onrender.com';
+    let currentBalance = 0;
+    let currentInventory = [];
+
+    const CASES = [
+        {id: 1, name: "Стандартний", price: 50, emoji: "🎁"},
+        {id: 2, name: "Преміум", price: 150, emoji: "🏆"},
+        {id: 3, name: "Безкоштовний", price: 0, emoji: "🎁"}
+    ];
+
+    async function sendAction(action, caseId = null) {
+        const data = {action, case_id: caseId};
+        tg.sendData(JSON.stringify(data));
+    }
+
+    async function loadData() {
+        try {
+            const res = await fetch(`${API_URL}/api/user/${USER_ID}`);
+            const data = await res.json();
+            currentBalance = data.stars || 0;
+            currentInventory = data.inventory || [];
+            document.getElementById('balance-display').textContent = currentBalance;
+            renderInventory();
+        } catch(e) {
+            console.error('Load error', e);
+        }
+    }
+
+    function renderInventory() {
+        const container = document.getElementById('inventory-container');
+        if (!currentInventory || currentInventory.length === 0) {
+            container.innerHTML = '<span style="color:#666;">Поки порожньо</span>';
+            return;
+        }
+        container.innerHTML = currentInventory.map(item => 
+            `<div class="inv-item">${item.name}</div>`
+        ).join('');
+    }
+
+    function renderCases() {
+        const container = document.getElementById('cases-container');
+        container.innerHTML = CASES.map(c => `
+            <div class="case-card" onclick="openCase(${c.id})">
+                <div class="emoji">${c.emoji}</div>
+                <div class="name">${c.name}</div>
+                <div class="price">⭐️ ${c.price > 0 ? c.price : 'FREE'}</div>
+                <button class="btn-open">Відкрити</button>
+            </div>
+        `).join('');
+    }
+
+    async function openCase(caseId) {
+        const caseData = CASES.find(c => c.id === caseId);
+        if (caseData.price > 0 && currentBalance < caseData.price) {
+            alert('❌ Недостатньо зірок!');
+            return;
+        }
+        
+        try {
+            const res = await fetch(`${API_URL}/api/open_case`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({telegram_id: USER_ID, case_id: caseId})
+            });
+            const data = await res.json();
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            showResult(data.item);
+            currentBalance = data.balance;
+            currentInventory = data.inventory;
+            document.getElementById('balance-display').textContent = currentBalance;
+            renderInventory();
+        } catch(e) {
+            alert('Помилка відкриття кейсу');
+        }
+    }
+
+    function showResult(item) {
+        document.getElementById('modal-emoji').textContent = item.emoji || '🎁';
+        document.getElementById('modal-name').textContent = item.name;
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    // Ініціалізація
+    renderCases();
+    loadData();
+</script>
+</body>
+</html>
